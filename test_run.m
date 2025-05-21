@@ -16,26 +16,31 @@ end
 % Step 3: Loop through all coefficients
 for l = 1:nlev-1
     [rows, cols] = size(G{l});
-    
+
     for y = 1:rows
         for x = 1:cols
-            % 3.1 Get guide value, level and x,y gives us the guide value
-            % at that specific pyramid level
+            % 3.1 Get guide value from Gaussian pyramid at level l
             g = G{l}(y, x);
 
-            % 3.2 Get subregion and center from full-res image
+            % 3.2 Get subregion and center index from full-res image
             [R, center] = determine_subregion(I, l, x, y);
 
-            % 3.3 Apply remapping
-            R_remapped = remapping_function(R, g);  % user-defined remapping function
+            % 3.3 Apply remapping to the subregion
+            R_remapped = r_func(R, g);  % remapping_function handles the detail/edge logic
 
-            % 3.4 Laplacian pyramid of remapped patch
+            % 3.4 Build Laplacian pyramid of the remapped patch
             L_patch = construct_laplacian_pyramid(R_remapped, l);
 
-            % 3.5 Extract single coefficient
-            cx = center(2);
-            cy = center(1);
-            L_out{l}(y, x) = L_patch{l}(cy, cx);
+            % 3.5 Extract single coefficient safely
+            if l <= length(L_patch)
+                [ph, pw] = size(L_patch{l});
+                cy = center(1);
+                cx = center(2);
+
+                if cy <= ph && cx <= pw
+                    L_out{l}(y, x) = L_patch{l}(cy, cx);
+                end
+            end
         end
     end
 end
@@ -45,6 +50,7 @@ L_out{nlev} = G{nlev};
 
 % Step 5: Reconstruct final image
 R = collapse_laplacian_pyramid(L_out);
+R = min(max(R, 0), 1);  % Clamp to [0, 1]
 
 end
 
@@ -52,25 +58,22 @@ end
 % Set parameters
 gray_img = im2double(rgb2gray(imread('peppers.png')));
 nlev = 5;
-s = 0.1;
-alpha = 0.8;
-beta = 0.6;
+s = 0.01;
+alpha = 0.3;
+beta = 0.3;
 
 % Define remapping function handle
 r_func = @(patch, g) remapping_function(patch, g, s, alpha, beta);
 
 % Run the Laplacian core (returns the pyramid)
-L_out = lapfilter_core(gray_img, r_func, nlev);
+R = lapfilter_core(gray_img, r_func, nlev);
 
-% Visualize each Laplacian level
 figure;
-for i = 1:nlev
-    subplot(1, nlev, i);
-    imshow(mat2gray(L_out{i}));
-    title(sprintf('Laplacian Level %d', i));
-end
 
+subplot(1, 2, 1);
+imshow(gray_img);
+title('Input Grayscale Image');
 
-
-
-
+subplot(1, 2, 2);
+imshow(R);
+title('Filtered Output Image');

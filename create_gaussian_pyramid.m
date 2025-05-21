@@ -1,7 +1,7 @@
 function pyr = create_gaussian_pyramid(I, nlev)
 
     pyr = cell(nlev, 1);       % initializing to 0
-    disp(pyr);
+
     pyr{1} = I;                % Level 1 is original image
     
     

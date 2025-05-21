@@ -28,7 +28,7 @@ function out = fd(d,alpha)
 end
 
 % edge remapping function
-function out = fe(a,beta)
+function out = fe(a)
     out = beta*a;
 end
 
