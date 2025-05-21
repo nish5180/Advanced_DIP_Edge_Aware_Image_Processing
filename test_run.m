@@ -1,17 +1,3 @@
-img = imread('peppers.png');     % Load a color image
-gray_img = rgb2gray(img);  
-lvl=5;
-pyr = create_gaussian_pyramid(gray_img, lvl);
-figure;
-
-for i = 1:lvl
-    subplot(1, lvl, i);
-    imshow(pyr{i});
-    title(sprintf('Level %d', i));
-end
-
-
-
 function R = lapfilter_core(I, r_func, nlev)
 % Core Local Laplacian Filtering algorithm (simplified and modular)
 % I      : full-resolution grayscale image (double, [0,1])
@@ -59,7 +45,31 @@ L_out{nlev} = G{nlev};
 
 % Step 5: Reconstruct final image
 R = collapse_laplacian_pyramid(L_out);
+
 end
+
+
+% Set parameters
+gray_img = im2double(rgb2gray(imread('peppers.png')));
+nlev = 5;
+s = 0.1;
+alpha = 0.8;
+beta = 0.6;
+
+% Define remapping function handle
+r_func = @(patch, g) remapping_function(patch, g, s, alpha, beta);
+
+% Run the Laplacian core (returns the pyramid)
+L_out = lapfilter_core(gray_img, r_func, nlev);
+
+% Visualize each Laplacian level
+figure;
+for i = 1:nlev
+    subplot(1, nlev, i);
+    imshow(mat2gray(L_out{i}));
+    title(sprintf('Laplacian Level %d', i));
+end
+
 
 
 
