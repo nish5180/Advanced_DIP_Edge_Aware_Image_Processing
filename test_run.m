@@ -20,3 +20,14 @@ function g = get_guide_value(pyr, l, x, y)
     g = pyr{l}(y, x);  
 end
 
+
+%this is just the test, it all needs to be there at level 
+
+l = 3;                        % test level (must be ≤ lvl)
+level_img = pyr{l};
+[ymax, xmax] = size(level_img);
+x = round(xmax / 2);          % pick a central x
+y = round(ymax / 2);          % pick a central y
+g = get_guide_value(pyr, l, x, y);
+fprintf('Guide value at level %d, (%d, %d): %.4f\n', l, x, y, g);
+
