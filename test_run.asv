@@ -12,6 +12,8 @@ end
 
 
 
+
+
 function R = lapfilter_core(I, r_func, nlev)
 % Core Local Laplacian Filtering algorithm (simplified and modular)
 % I      : full-resolution grayscale image (double, [0,1])
@@ -33,8 +35,7 @@ for l = 1:nlev-1
     
     for y = 1:rows
         for x = 1:cols
-            % 3.1 Get guide value, level and x,y gives us the guide value
-            % at that specific pyramid level
+            % 3.1 Get guide value
             g = G{l}(y, x);
 
             % 3.2 Get subregion and center from full-res image
