@@ -1,11 +1,11 @@
 function R = lapfilter_core(I, r_func, nlev)
-% Core Local Laplacian Filtering algorithm (simplified and modular)
 % I      : full-resolution grayscale image (double, [0,1])
 % r_func : remapping function handle @(patch, guide) → remapped patch
 % nlev   : number of pyramid levels
 
 % Step 1: Gaussian pyramid of input
 G = create_gaussian_pyramid(I, nlev);
+
 
 % Step 2: Prepare empty Laplacian output pyramid
 L_out = cell(nlev, 1);
@@ -19,19 +19,30 @@ for l = 1:nlev-1
 
     for y = 1:rows
         for x = 1:cols
-            % 3.1 Get guide value from Gaussian pyramid at level l
+            
             g = G{l}(y, x);
+            fprintf("Guide value at (%d, %d, level %d): %.4f\n", x, y, l, g);
 
-            % 3.2 Get subregion and center index from full-res image
+            % 3.2 Subregion and center from full-res image
             [R, center] = determine_subregion(I, l, x, y);
+            [Rh, Rw] = size(R);
+            fprintf("Subregion size: %dx%d | Center: (%d, %d)\n", Rh, Rw, center(1), center(2));
 
-            % 3.3 Apply remapping to the subregion
-            R_remapped = r_func(R, g);  % remapping_function handles the detail/edge logic
+            % 3.3 Remap patch using guide
+            R_remapped = r_func(R, g);
 
-            % 3.4 Build Laplacian pyramid of the remapped patch
+            % 3.4 Laplacian pyramid of remapped patch
             L_patch = construct_laplacian_pyramid(R_remapped, l);
 
-            % 3.5 Extract single coefficient safely
+            if x == 10 && y == 22 && l == 4
+                figure;
+                subplot(1,3,1); imshow(R); title('Original Patch');
+                subplot(1,3,2); imshow(R_remapped); title('Remapped Patch');
+                subplot(1,3,3); imshow(R - R_remapped, []); title('Difference');
+            end
+                        
+
+            % 3.5 Extract and assign the coefficient if within bounds
             if l <= length(L_patch)
                 [ph, pw] = size(L_patch{l});
                 cy = center(1);
@@ -39,41 +50,59 @@ for l = 1:nlev-1
 
                 if cy <= ph && cx <= pw
                     L_out{l}(y, x) = L_patch{l}(cy, cx);
+
+                    fprintf("Inserted coefficient at (%d,%d) = %.4f\n", y, x, L_patch{l}(cy, cx));
+                    
                 end
             end
         end
     end
 end
 
-% Step 4: Copy last Gaussian level as residual
+% Step 4: Final residual
 L_out{nlev} = G{nlev};
+% 
+% for l = 1:nlev
+%     figure;
+%     imshow(mat2gray(L_out{l}));
+%     title(sprintf('Laplacian Output Level %d', l));
+% end
 
-% Step 5: Reconstruct final image
+
+% Step 5: Collapse pyramid
 R = collapse_laplacian_pyramid(L_out);
-R = min(max(R, 0), 1);  % Clamp to [0, 1]
-
+R = min(max(R, 0), 1); % Clamp to [0, 1]
 end
 
+% Input
+% gray_img = im2single(rgb2gray(imread('peppers.png')));
 
-% Set parameters
-gray_img = im2double(rgb2gray(imread('peppers.png')));
+gray_img = im2single(imread('C:\Users\nishi\Documents\TUDelft\Quarter_4\Image_Processing\input_images\input_png\stripes.png'));
+
+
+% gray_img = ones(64, 64, 'single');  % white background
+% gray_img(24:40, 24:40) = 0;         % black square in the center
 nlev = 5;
 s = 0.01;
-alpha = 0.3;
-beta = 0.3;
+alpha = 0.5;
+beta = 5;
 
-% Define remapping function handle
+% Remapping function handle
 r_func = @(patch, g) remapping_function(patch, g, s, alpha, beta);
 
-% Run the Laplacian core (returns the pyramid)
+
+% Run filtering
 R = lapfilter_core(gray_img, r_func, nlev);
 
+% Display input and result
 figure;
-
-subplot(1, 2, 1);
-imshow(gray_img);
+subplot(1, 3, 1); imshow(gray_img); 
 title('Input Grayscale Image');
-
-subplot(1, 2, 2);
-imshow(R);
+subplot(1, 3, 2); imshow(R);
 title('Filtered Output Image');
+subplot(1, 3, 3); imshow(gray_img-R);
+title('Diff Output Image');
+
+
+
+

@@ -11,7 +11,7 @@ function pyr = construct_laplacian_pyramid(I, nlev)
     % for color we will need to loop over different channels 
     for l = 1:nlev-1
         % Upsample G_{l+1} to match G_{l} so we can subtract
-        upsampled = imresize(G{l+1}, size(G{l}), 'bilinear');
+        upsampled = imresize(G{l+1}, size(G{l}), 'nearest');
 
         % Subtract to get Laplacian level
         pyr{l} = G{l} - upsampled;

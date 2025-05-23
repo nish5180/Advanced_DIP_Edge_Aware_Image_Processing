@@ -42,3 +42,42 @@ fprintf('Black region L(20,20) = %.4f\n', L(20,20));
 
 % At edge (adjust if needed to align with edge after downsampling)
 fprintf('Edge region L(12,12) = %.4f\n', L(12,12));
+
+
+
+%% Step 1: Create white background with black square
+
+% img = im2double(rgb2gray(imread('peppers.png')));
+gray_img = im2single(imread('C:\Users\nishi\Documents\TUDelft\Quarter_4\Image_Processing\input_images\input_png\stripes.png'));
+
+figure;
+imshow(gray_img);
+title('White Background with Black Square');
+
+
+B = locallapfilt(gray_img, 0.01, 0.5, 5);
+imshow(B);
+
+title('White Background with Black Square locallapfilt');
+
+
+
+%%
+patch = ones(10,10);
+g = 1;
+s = 1;
+alpha = 1;
+beta = 1;
+
+remapped = remapping_function(patch, g, s, alpha, beta);
+disp(remapped);  % Should all be 1s
+
+%%
+img = ones(64, 64);     % uniform white image
+nlev = 5;
+L = construct_laplacian_pyramid(img, nlev);
+R = collapse_laplacian_pyramid(L);
+
+disp(max(abs(R(:) - img(:))));  % should be near zero
+imshow(R);
+

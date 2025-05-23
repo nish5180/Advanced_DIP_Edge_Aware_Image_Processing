@@ -1,49 +1,55 @@
-function out = remapping_function(I, g, s, alpha, beta)
-% I: input image (grayscale, [0,1])
-% g: guide value (scalar or image)
-% s: detail/edge threshold
-% alpha, beta: remapping parameters
+function out = remapping_function(I, g, sigma_r, alpha, beta)
+% Input:
+%   I: Grayscale image (single-precision, range [0,1])
+%   sigma_r: Detail/edge threshold (scalar)
+%   alpha: Detail remapping exponent (alpha <= 1 smooths, alpha > 1 sharpens)
+%   beta: Edge scaling factor (beta < 1 compresses, beta > 1 expands dynamic range)
 
-    % Pixel-wise difference
-    diff = I - g;
-    abs_diff = abs(diff);
+% 1. Initialize
 
-    % Initialize output
-    out = zeros(size(I));
+out = zeros(size(I), 'like', I);
+noise_level = 0.01;  % From original paper
 
-    % Mask for detail vs edge
-    is_detail = abs_diff <= s;
-    is_edge = ~is_detail;
+% 2. Compute pixel-wise difference
+diff = I - g;
+abs_diff = abs(diff);
 
-    % Apply r_d to detail region
-    out(is_detail) = r_d(I(is_detail), g, s, alpha);
-
-    % Apply r_e to edge region
-    out(is_edge) = r_e(I(is_edge), g, s, beta);
+% 3. Smooth transition for alpha < 1 (Eq. 3 in paper)
+if alpha < 1
+    tau = smooth_step(noise_level, 2*noise_level, abs_diff*sigma_r);
+else
+    tau = 0;
 end
 
-% detail remapping function
-function out = fd(d,alpha)
-    out = d.^alpha;
+% 4. Detail remapping (|i-g| ≤ sigma_r)
+is_detail = abs_diff <= sigma_r;
+d = abs_diff(is_detail) / sigma_r;  % Normalized detail [0,1]
+
+% Apply f_d(d) = d^alpha with smooth transition
+if alpha < 1
+    fd = tau(is_detail).*(d.^alpha) + (1-tau(is_detail)).*d;
+else
+    fd = d.^alpha;
+end
+out(is_detail) = g + sign(diff(is_detail)).*sigma_r.*fd;
+
+
+
+% 5. Edge remapping (|i-g| > sigma_r)
+is_edge = ~is_detail;
+a = abs_diff(is_edge) - sigma_r;  % Edge amplitude above threshold
+
+% Apply f_e(a) = beta*a (linear edge scaling)
+fe = beta * a;
+out(is_edge) = g + sign(diff(is_edge)).*(fe + sigma_r);
+
+% 6. Clamp to valid range
+out = max(0, min(1, out));
 end
 
-% edge remapping function
-function out = fe(a,beta)
-    out = beta*a;
+% Smooth step function (from original paper)
+function y = smooth_step(xmin, xmax, x)
+    y = (x - xmin)/(xmax - xmin);
+    y = max(0, min(1, y));
+    y = y.^2 .* (3 - 2*y); 
 end
-
-%both these are according to the paper 
-function out = r_d(i, g, s, alpha)
-    d = abs(i - g) ./ s;                     % Normalize difference
-    fd_val = fd(d, alpha);                  % Apply f_d function
-    out = g + sign(i - g) .* s .* fd_val;    % Final remapped value
-end
-
-
-function out = r_e(i, g, s, beta)
-    d = abs(i - g);                       % Absolute differ
-    fe_val = fe(d - s, beta);            % Apply f_e to the part > s
-    out = g + sign(i - g) .* (fe_val + s);  % Add back s , formulated according to the paper 
-end
-
-
