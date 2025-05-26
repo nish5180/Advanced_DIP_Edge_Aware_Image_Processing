@@ -11,7 +11,9 @@ function [R, center] = determine_subregion(I, level, x0, y0)
     y_f = (y0 - 1) * scale + 1;
 
     % Half-width of patch based on 5-tap kernel support
-    h = 3 * scale - 2;
+    % K = 3 * (2^(level + 2) - 1);
+    % h = floor((K-1)/2); % symmetric half-width
+     h = 3 * scale - 2;
 
     % Full-res image size
     [rows, cols, ~] = size(I);

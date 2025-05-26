@@ -39,6 +39,15 @@ out(is_detail) = g + sign(diff(is_detail)).*sigma_r.*fd;
 is_edge = ~is_detail;
 a = abs_diff(is_edge) - sigma_r;  % Edge amplitude above threshold
 
+%DEBUG
+% fprintf('  Num detail pixels: %d, Num edge pixels: %d (Total: %d)\n', nnz(is_detail), nnz(is_edge), numel(I));
+% if nnz(is_detail) > 0
+%     fprintf('  Example detail diffs: %s\n', num2str(abs_diff(find(is_detail,3,'first'))'));
+% end
+% if nnz(is_edge) > 0
+%     fprintf('  Example edge diffs: %s\n', num2str(abs_diff(find(is_edge,3,'first'))'));
+% end
+
 % Apply f_e(a) = beta*a (linear edge scaling)
 fe = beta * a;
 out(is_edge) = g + sign(diff(is_edge)).*(fe + sigma_r);

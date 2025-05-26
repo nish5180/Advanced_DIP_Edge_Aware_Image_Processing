@@ -1,39 +1,43 @@
-
 function R = collapse_laplacian_pyramid(pyr)
 %COLLAPSE_LAPLACIAN_PYRAMID Reconstructs an image from its Laplacian pyramid.
 %   pyr: cell array {L1, L2, ..., Ln}, where Ln is the residual (coarsest level).
 %   R: reconstructed full-resolution image
 
     nlev = length(pyr);
-    filter = pyramid_filter();  % 5-tap kernel: [1 4 6 4 1]/16
+    %filter = pyramid_filter();  % 5-tap kernel: [1 4 6 4 1]/16
 
     R = pyr{nlev};  % Start from coarsest level
 
     for lev = (nlev-1):-1:1
         % Upsample and filter to match size of current level
-        up = upsample_and_filter(R, filter, size(pyr{lev}));
+        % up = upsample_and_filter(R, filter, size(pyr{lev}));
+
+        dims = size(pyr{lev}); 
+        up = imresize(R, [dims(1), dims(2)], 'bilinear');
+
         % Add Laplacian coefficient
         R = up + pyr{lev};
     end
 end
 
-function up = upsample_and_filter(img, filt, target_size)
-    % 1. Upsample by inserting zeros
-    upsampled = zeros(2*size(img));
-    upsampled(1:2:end, 1:2:end) = img;
 
-    % 2. Apply separable filter
-    filt = filt(:);
-    up = conv2(filt, filt', upsampled, 'same');
-
-    % 3. Resize to match target pyramid level
-    up = imresize(up, target_size, 'bilinear');
-end
-
-function f = pyramid_filter()
-    % Standard 5-tap Gaussian kernel used in Burt & Adelson (sum = 16)
-    f = [1 4 6 4 1] / 16;
-end
+% % function up = upsample_and_filter(img, filt, target_size)
+% %     % 1. Upsample by inserting zeros
+% %     upsampled = zeros(2*size(img));
+% %     upsampled(1:2:end, 1:2:end) = img;
+% % 
+% %     % 2. Apply separable filter
+% %     filt = filt(:);
+% %     up = conv2(filt, filt', upsampled, 'same');
+% % 
+% %     % 3. Resize to match target pyramid level
+% %     up = imresize(up, target_size, 'bilinear');
+% % end
+% 
+% function f = pyramid_filter()
+%     % Standard 5-tap Gaussian kernel used in Burt & Adelson (sum = 16)
+%     f = [1 4 6 4 1] / 16;
+% end
 
 
 
