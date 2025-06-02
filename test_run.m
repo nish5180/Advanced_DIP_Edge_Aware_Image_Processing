@@ -49,7 +49,7 @@ subplot(2, 3, 3); imshow(mat2gray(gray_img - R));
 title('Diff Output Image');
 subplot(2, 3, 4);
 imshow(img_locallap_filtered);
-title(sprintf('MATLAB locallapfilt() (s=%.2f, a=%.2f)', s_local, alpha_local));
+title(sprintf('MATLAB locallapfilt() (s=%.2f, a=%.2f, b=%.2f)', s_local, alpha_local, beta_local));
 subplot(2, 3, 5);
 imshow(img_tonemapped_matlab);
 title('MATLAB tonemap()');

@@ -20,7 +20,7 @@ for l = 1:nlev-1
         for x = 1:cols
 
             g = G{l}(y, x);
-            fprintf("Guide value at (%d, %d, level %d): %.4f\n", x, y, l, g);
+            % fprintf("Guide value at (%d, %d, level %d): %.4f\n", x, y, l, g);
 
             % 3.2 Subregion and center from full-res image
             [R, center] = determine_subregion_symmetric_padding(I, l, x, y);
@@ -33,12 +33,12 @@ for l = 1:nlev-1
             % 3.4 Laplacian pyramid of remapped patch
             L_patch = construct_laplacian_pyramid(R_remapped, nlev);
             % DEBUG
-            if x == 10 && y == 22 && l == 4
-                figure;
-                subplot(1,3,1); imshow(R); title('Original Patch');
-                subplot(1,3,2); imshow(R_remapped); title('Remapped Patch');
-                subplot(1,3,3); imshow(R - R_remapped, []); title('Difference');
-            end          
+            % if x == 10 && y == 22 && l == 4
+            %     figure;
+            %     subplot(1,3,1); imshow(R); title('Original Patch');
+            %     subplot(1,3,2); imshow(R_remapped); title('Remapped Patch');
+            %     subplot(1,3,3); imshow(R - R_remapped, []); title('Difference');
+            % end          
 
             % 3.5 Extract and assign the coefficient if within bounds
             if l <= length(L_patch)
@@ -52,7 +52,7 @@ for l = 1:nlev-1
 
                 if cy <= ph && cx <= pw
                     L_out{l}(y, x) = L_patch{l}(cy, cx);
-                    fprintf("l=%d (x=%d,y=%d): inserted %.4f from patch[%d,%d]\n", l, x, y, L_patch{l}(cy, cx), cy, cx);
+                    %fprintf("l=%d (x=%d,y=%d): inserted %.4f from patch[%d,%d]\n", l, x, y, L_patch{l}(cy, cx), cy, cx);
 
                     %fprintf("Inserted coefficient at (%d,%d) = %.4f\n", y, x, L_patch{l}(cy, cx));
 
@@ -75,7 +75,7 @@ L_out{nlev} = G{nlev};
 
 % Step 5: Collapse pyramid
 R = collapse_laplacian_pyramid(L_out);
-R = min(max(R, 0), 1); % Clamp to [0, 1]
+% R = min(max(R, 0), 1); % Clamp to [0, 1]
 end
 
 
@@ -146,3 +146,7 @@ end
 % R = collapse_laplacian_pyramid(L_out);
 % R = min(max(R, 0), 1); % Clamp to [0, 1]
 % end
+
+% R = min(max(R, 0), 1); % Clamp to [0, 1]
+% end
+

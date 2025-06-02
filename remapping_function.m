@@ -17,7 +17,7 @@ end
 % 2. Compute pixel-wise difference
 diff = I - g;
 abs_diff = abs(diff);
-fprintf("Max |I - g| = %.4f\n", max(abs_diff(:)));
+% fprintf("Max |I - g| = %.4f\n", max(abs_diff(:)));
 
 
 % 3. Smooth transition for alpha < 1 (Eq. 3 in paper) LATEST CHANGE COMMENT
@@ -93,13 +93,12 @@ end
 if alpha > 1
     mean_detail = mean(abs_diff(is_detail));
     mean_edge = mean(abs_diff(is_edge));
-    fprintf("  Mean |I-g| (detail): %.6f, (edge): %.6f\n", mean_detail, mean_edge);
+    % fprintf("  Mean |I-g| (detail): %.6f, (edge): %.6f\n", mean_detail, mean_edge);
 end
 
 
 % 6. Clamp to valid range
-out = max(0, min(1, out));
-
+% out = max(0, min(1, out));
 end
 
 % Smooth step function (from original paper)

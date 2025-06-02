@@ -1,0 +1,109 @@
+
+% Input
+image = hdrread('input_images\input_hdr\desk.hdr'); % HDR
+
+% image = imread('input_images\input_png\lena_crop.png'); % LDR
+img_gray = im2single(rgb2gray(image));
+
+% --- Random Crop for faster processing ---
+% crop_size = 256;
+% [h, w] = size(img_gray);
+% top = randi([1, h - crop_size + 1]);
+% left = randi([1, w - crop_size + 1]);
+% img_gray = img_gray(top:top+crop_size-1, left:left+crop_size-1);
+
+% Log Transform
+epsilon = 1e-6;
+img_log = log(max(img_gray, epsilon));
+fprintf('HDR img_log stats: Min=%.4f, Max=%.4f, Span=%.4f\n', min(img_log(:)), max(img_log(:)), max(img_log(:))-min(img_log(:)));
+
+% Filtering (Local Laplacian Filter)
+% Set HDR parameters
+nlev = 5;
+s_tone = log(2.5); 
+alpha_tone = 0.9;
+beta_tone = 0.3;
+
+% Remapping function handle
+r_func = @(patch, g_guide) remapping_function(patch, g_guide, s_tone, alpha_tone, beta_tone);
+
+% Apply your custom Laplacian filter
+tic;
+filtered_log = lapfilter_core(img_log, r_func, nlev);
+% fprintf('filtered_log stats: Min=%.4e, Max=%.4e, Span=%.4e\n', ...
+%         min(filtered_log(:)), max(filtered_log(:)), max(filtered_log(:))-min(filtered_log(:)));
+toc;
+
+% ---- 4. Post-processing (Map to Display Range) ----
+fprintf('Remapping filtered log image to display range...\n');
+epsilon_scale = 1e-9; % Small epsilon for division robustness
+
+% filtered_log is the output from lapfilter_core
+original_min_log = min(filtered_log(:));
+original_max_log = max(filtered_log(:));
+
+% Shift log image so its original max is now at 0
+offset_log_image = filtered_log - original_max_log;
+% Now, the range of offset_log_image is [original_min_log - original_max_log, 0]
+% The minimum value of offset_log_image is (original_min_log - original_max_log), which is negative or zero.
+
+% Define target display dynamic range in log scale
+target_log_display_range = log(80); % e.g., for 80:1 contrast ratio
+
+% The span of relevant values in offset_log_image is from its min to 0.
+% So, its effective range width is abs(min_of_offset_log_image), which is (original_max_log - original_min_log).
+current_log_span = original_max_log - original_min_log;
+
+scaled_log_image = zeros(size(offset_log_image), 'like', offset_log_image); % Initialize
+if current_log_span > epsilon_scale
+    % We want to map the span [original_min_log - original_max_log, 0]
+    % to [-target_log_display_range, 0].
+    % So, we scale by (target_log_display_range / current_log_span).
+    scale_factor = target_log_display_range / current_log_span;
+    scaled_log_image = offset_log_image * scale_factor;
+else
+    % If original span was tiny/zero, set final log image to all zeros (which means log(1)).
+    % This makes the exp() result in 1, leading to a mid-gray after normalization if needed.
+    % Or, directly set to the top of the target range.
+    scaled_log_image = zeros(size(offset_log_image), 'like', offset_log_image);
+end
+
+% Ensure the maximum is precisely 0 after scaling, and clamp very negative values.
+% (This step might be redundant if scaling logic is perfect but good for robustness)
+scaled_log_image = max(scaled_log_image, -target_log_display_range * 1.1); % Allow some minor overshoot
+scaled_log_image = scaled_log_image - max(scaled_log_image(:)); % Force max to be 0
+
+fprintf('  Scaled log image range for exp(): [%.2f, %.2f]\n', min(scaled_log_image(:)), max(scaled_log_image(:)));
+
+% Convert back to linear domain
+img_linear = exp(scaled_log_image); % Approx range [exp(-target_log_display_range), 1]
+fprintf('  Linear tone mapped image range after exp: [%.4f, %.4f]\n', min(img_linear(:)), max(img_linear(:)));
+
+% Normalize to [0,1]
+% Since max of img_linear should be exp(0)=1, we can just divide by it.
+% But to be robust if it's not exactly 1 due to float precision:
+min_lin_val = min(img_linear(:));
+max_lin_val = max(img_linear(:));
+if (max_lin_val - min_lin_val) < epsilon_scale % Use a small epsilon
+    img_tonemapped_linear_norm = 0.5 * ones(size(img_linear)); % Avoid division by zero, output mid-gray
+else
+    img_tonemapped_linear_norm = (img_linear - min_lin_val) / (max_lin_val - min_lin_val);
+end
+img_tonemapped_linear_norm = max(0, min(1, img_tonemapped_linear_norm)); % Clamp strictly
+
+% Gamma correction
+gamma = 2.2;
+img_tonemapped = img_tonemapped_linear_norm .^ (1/gamma);
+fprintf('Post-processing and gamma correction finished.\n');
+% 2. tonemap
+img_tonemapped_matlab = tonemap(img_gray); % Applies default tone mapping
+
+% Display input and result
+figure;
+subplot(1, 3, 1); imshow(img_gray); 
+title('Input Grayscale Image');
+subplot(1, 3, 2); imshow(img_tonemapped);
+title(sprintf('Custom tonemap() (s=%.2f, a=%.2f, b=%/2f)', s_tone, alpha_tone, beta_tone));
+subplot(1, 3, 3);
+imshow(img_tonemapped_matlab);
+title('MATLAB tonemap()');
