@@ -1,16 +1,23 @@
 
-image = imread('input_images\input_png\lenna.png'); % Choose image file
+image = imread('input_images\input_png\flower.png'); % Choose image file
 gray_img = im2single(rgb2gray(image)); % Convert to single-valued grayscale for processing
 
+
+%testing out on an easier image
+% gray_img = zeros(64, 64, 'single');       % black background
+% gray_img(24:40, 24:40) = 1;               % white square in center
+% imshow(gray_img)
+
+% 
 % gray_img = ones(64, 64, 'single');  % white background
 % gray_img(24:40, 24:40) = 0;         % black square in the center
 
-nlev = 5; % Num of levels
+nlev = 4; % Num of levels
 
 % 
-s = 0.2;
-alpha = 0.5;
-beta = 2;
+s = 0.05;
+alpha = 1;
+beta = 8;
 
 % Remapping function handle
 r_func = @(patch, g) remapping_function(patch, g, s, alpha, beta);
@@ -18,13 +25,16 @@ r_func = @(patch, g) remapping_function(patch, g, s, alpha, beta);
 
 % Run filtering
 tic;
-R = lapfilter_core(gray_img, r_func, nlev);
+R = lapfilter_core(gray_img, r_func, nlev,s,alpha,beta);
+% fprintf("Max |I-g| in patch: %.4f\n", max(abs(R(:) - g)));
+
 toc;
 
 % 1. locallapfilt()
-s_local = 0.2; 
-alpha_local = 1.5; 
-img_locallap_filtered = locallapfilt(single(gray_img), s_local, alpha_local);
+s_local = 0.05; 
+alpha_local = 1; 
+beta_local= 8;
+img_locallap_filtered = locallapfilt(gray_img, s_local, alpha_local,beta_local);
 
 % 2. tonemap
 img_tonemapped_matlab = tonemap(gray_img); % Applies default tone mapping
@@ -34,7 +44,7 @@ figure;
 subplot(2, 3, 1); imshow(gray_img); 
 title('Input Grayscale Image');
 subplot(2, 3, 2); imshow(R);
-title(sprintf('lapfiltercore() (s=%.1f,a=%.1f,b=%.1f)', s, alpha, beta));
+title(sprintf('lapfiltercore() (s=%.2f,a=%.2f,b=%.2f)', s, alpha, beta));
 subplot(2, 3, 3); imshow(mat2gray(gray_img - R));
 title('Diff Output Image');
 subplot(2, 3, 4);
@@ -43,6 +53,8 @@ title(sprintf('MATLAB locallapfilt() (s=%.2f, a=%.2f)', s_local, alpha_local));
 subplot(2, 3, 5);
 imshow(img_tonemapped_matlab);
 title('MATLAB tonemap()');
+subplot(2, 3, 6); imshow(mat2gray(R - img_locallap_filtered));
+title('Diff between matlab and custom Image');
 
 
 

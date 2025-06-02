@@ -12,8 +12,12 @@ function R = collapse_laplacian_pyramid(pyr)
         % Upsample and filter to match size of current level
         % up = upsample_and_filter(R, filter, size(pyr{lev}));
 
-        dims = size(pyr{lev}); 
-        up = imresize(R, [dims(1), dims(2)], 'bilinear');
+        % dims = size(pyr{lev}); 
+        % up = imresize(R, [dims(1), dims(2)], 'bilinear');
+
+        filter = pyramid_filter();  
+        up = upsample_and_filter(R, filter, size(pyr{lev}));
+
 
         % Add Laplacian coefficient
         R = up + pyr{lev};
@@ -21,23 +25,41 @@ function R = collapse_laplacian_pyramid(pyr)
 end
 
 
-% % function up = upsample_and_filter(img, filt, target_size)
-% %     % 1. Upsample by inserting zeros
-% %     upsampled = zeros(2*size(img));
-% %     upsampled(1:2:end, 1:2:end) = img;
-% % 
-% %     % 2. Apply separable filter
-% %     filt = filt(:);
-% %     up = conv2(filt, filt', upsampled, 'same');
-% % 
-% %     % 3. Resize to match target pyramid level
-% %     up = imresize(up, target_size, 'bilinear');
-% % end
+
+
+% function up = upsample_and_filter(img, filt, target_size)
+%     % 1. Upsample by inserting zeros
+%     upsampled = zeros(2*size(img));
+%     upsampled(1:2:end, 1:2:end) = img;
 % 
-% function f = pyramid_filter()
-%     % Standard 5-tap Gaussian kernel used in Burt & Adelson (sum = 16)
-%     f = [1 4 6 4 1] / 16;
+%     % 2. Apply separable filter
+%     filt = filt(:);
+%     up = conv2(filt, filt', upsampled, 'same');
+%     up = up(1:target_size(1), 1:target_size(2));
+% 
+% 
+%     % 3. Resize to match target pyramid level
+% 
 % end
+
+function up = upsample_and_filter(img, filt, target_size)
+    % 1. Upsample by inserting zeros
+    upsampled = zeros(2*size(img));
+    upsampled(1:2:end, 1:2:end) = img;
+
+    % 2. Apply separable filter and apply factor of 4
+    filt = filt(:);
+    up = conv2(filt, filt', upsampled, 'same') * 4; % *** CRITICAL CORRECTION: Add * 4 ***
+
+    % 3. Crop to target size %latest change 12.28
+    up = up(1:target_size(1), 1:target_size(2));
+end
+
+
+function f = pyramid_filter()
+    % Standard 5-tap Gaussian kernel used in Burt & Adelson (sum = 16)
+    f = [1 4 6 4 1] / 16;
+end
 
 
 
