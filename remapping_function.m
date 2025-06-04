@@ -11,7 +11,7 @@ out = zeros(size(I), 'like', I);
 noise_level = 0.01;  % From original paper
 
 if alpha ~= 1 || beta ~= 1
-    fprintf("Mean remapping change: %.6f\n", mean(abs(out(:) - I(:))));
+    % fprintf("Mean remapping change: %.6f\n", mean(abs(out(:) - I(:))));
 end
 
 % 2. Compute pixel-wise difference
@@ -23,7 +23,7 @@ abs_diff = abs(diff);
 % 3. Smooth transition for alpha < 1 (Eq. 3 in paper) LATEST CHANGE COMMENT
 % 
 if alpha < 1
-    tau = smooth_step(noise_level, 2*noise_level, abs_diff*sigma_r);
+    tau = smooth_step(noise_level, 2*noise_level, abs_diff/sigma_r);
 else
     tau = 0;
 end
@@ -48,7 +48,7 @@ else
 end
 
 if alpha > 1
-   disp("DETAIL SHARPENING ACTIVE")
+   % disp("DETAIL SHARPENING ACTIVE")
 end
 
 %latest comment out

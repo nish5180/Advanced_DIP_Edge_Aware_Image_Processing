@@ -1,5 +1,5 @@
 
-image = imread('input_images\input_png\flower.png'); % Choose image file
+image = imread('input_images\input_png\lena_crop.png'); % Choose image file
 gray_img = im2single(rgb2gray(image)); % Convert to single-valued grayscale for processing
 
 
@@ -12,12 +12,12 @@ gray_img = im2single(rgb2gray(image)); % Convert to single-valued grayscale for 
 % gray_img = ones(64, 64, 'single');  % white background
 % gray_img(24:40, 24:40) = 0;         % black square in the center
 
-nlev = 4; % Num of levels
+nlev = 5; % Num of levels
 
 % 
-s = 0.05;
-alpha = 1;
-beta = 8;
+s = 0.1;
+alpha = 8;
+beta = 1;
 
 % Remapping function handle
 r_func = @(patch, g) remapping_function(patch, g, s, alpha, beta);
@@ -30,31 +30,34 @@ R = lapfilter_core(gray_img, r_func, nlev,s,alpha,beta);
 
 toc;
 
+%--COMPARISONS WITH LAPFILTER_CORE()
 % 1. locallapfilt()
 s_local = 0.05; 
-alpha_local = 1; 
-beta_local= 8;
+alpha_local = 8; 
+beta_local= 1;
 img_locallap_filtered = locallapfilt(gray_img, s_local, alpha_local,beta_local);
 
-% 2. tonemap
-img_tonemapped_matlab = tonemap(gray_img); % Applies default tone mapping
+% 2. bilateral()
+s_t = 0.1
+s_s = 3
+img_bilateral = bilateral(gray_img, s_t, s_s); % Applies default tone mapping
 
 % Display input and result
 figure;
 subplot(2, 3, 1); imshow(gray_img); 
 title('Input Grayscale Image');
 subplot(2, 3, 2); imshow(R);
-title(sprintf('lapfiltercore() (s=%.2f,a=%.2f,b=%.2f)', s, alpha, beta));
+title(sprintf('lapfilter\\_core() (s=%.2f,a=%.2f,b=%.2f)', s, alpha, beta));
 subplot(2, 3, 3); imshow(mat2gray(gray_img - R));
 title('Diff Output Image');
 subplot(2, 3, 4);
 imshow(img_locallap_filtered);
 title(sprintf('MATLAB locallapfilt() (s=%.2f, a=%.2f, b=%.2f)', s_local, alpha_local, beta_local));
 subplot(2, 3, 5);
-imshow(img_tonemapped_matlab);
-title('MATLAB tonemap()');
+imshow(img_bilateral);
+title(sprintf('Custom Bilateral Filter Output (s_t=%.2f, s_s=%.2f)', s_t, s_s));
 subplot(2, 3, 6); imshow(mat2gray(R - img_locallap_filtered));
-title('Diff between matlab and custom Image');
+title('Diff between MATLAB vs Custom Laplacian');
 
 
 

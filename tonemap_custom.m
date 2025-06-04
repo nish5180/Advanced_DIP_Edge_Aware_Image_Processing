@@ -1,16 +1,16 @@
 
 % Input
-image = hdrread('input_images\input_hdr\desk.hdr'); % HDR
+% image = hdrread('input_images\input_hdr\desk.hdr'); % HDR
 
-% image = imread('input_images\input_png\lena_crop.png'); % LDR
+image = imread('input_images\input_png\lena_crop.png'); % LDR
 img_gray = im2single(rgb2gray(image));
 
 % --- Random Crop for faster processing ---
-crop_size = 256;
-[h, w] = size(img_gray);
-top = randi([1, h - crop_size + 1]);
-left = randi([1, w - crop_size + 1]);
-img_gray = img_gray(top:top+crop_size-1, left:left+crop_size-1);
+% crop_size = 384;
+% [h, w] = size(img_gray);
+% top = randi([1, h - crop_size + 1]);
+% left = randi([1, w - crop_size + 1]);
+% img_gray = img_gray(top:top+crop_size-1, left:left+crop_size-1);
 
 % Log Transform
 epsilon = 1e-6;
@@ -19,10 +19,10 @@ fprintf('HDR img_log stats: Min=%.4f, Max=%.4f, Span=%.4f\n', min(img_log(:)), m
 
 % Filtering (Local Laplacian Filter)
 % Set HDR parameters
-nlev = 5;
+nlev = 5; % Seems to give brighter images than nlev = 5
 s_tone = log(2.5); 
 alpha_tone = 0.9;
-beta_tone = 0.3;
+beta_tone = 2.5;
 
 % Remapping function handle
 r_func = @(patch, g_guide) remapping_function(patch, g_guide, s_tone, alpha_tone, beta_tone);
@@ -49,7 +49,6 @@ offset_log_image = filtered_log - original_max_log;
 % Define target display dynamic range in log scale
 target_log_display_range = log(80); % e.g., for 80:1 contrast ratio
 
-scaled_log_image = zeros(size(offset_log_image), 'like', offset_log_image); % Initialize
 scale_factor = target_log_display_range / current_log_span;
 scaled_log_image = offset_log_image * scale_factor;
 
@@ -67,10 +66,11 @@ if (max_lin_val - min_lin_val) < epsilon_scale % Use a small epsilon
 else
     img_tonemapped_linear_norm = (img_linear - min_lin_val) / (max_lin_val - min_lin_val);
 end
-img_tonemapped_linear_norm = max(0, min(1, img_tonemapped_linear_norm)); % Clamp strictly
+
+img_tonemapped_linear_norm = max(0, min(1, img_tonemapped_linear_norm));
 
 % Gamma correction
-gamma = 2.2;
+gamma = 2.0;
 img_tonemapped = img_tonemapped_linear_norm .^ (1/gamma);
 fprintf('Post-processing and gamma correction finished.\n');
 
@@ -82,7 +82,7 @@ figure;
 subplot(1, 3, 1); imshow(img_gray); 
 title('Input Grayscale Image');
 subplot(1, 3, 2); imshow(img_tonemapped);
-title(sprintf('Custom tonemap() (s=%.2f, a=%.2f, b=%/2f)', s_tone, alpha_tone, beta_tone));
+title(sprintf('Custom tonemap() (s=%.2f, a=%.2f, b=%.2f)', s_tone, alpha_tone, beta_tone));
 subplot(1, 3, 3);
 imshow(img_tonemapped_matlab);
 title('MATLAB tonemap()');
